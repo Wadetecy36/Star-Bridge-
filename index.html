@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StarBridge — a small game for two</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="starfield" aria-hidden="true"></div>
+
+<!-- ============ LOBBY ============ -->
+<main id="lobby" class="screen lobby">
+  <div class="lobby-card">
+    <p class="eyebrow">a small game for two</p>
+    <h1 class="wordmark">StarBridge</h1>
+    <p class="tagline">Two skies, one constellation. Open a room, send the code, and meet in the middle.</p>
+
+    <label class="field-label" for="name-input">Your name</label>
+    <input id="name-input" class="text-input" type="text" maxlength="20" placeholder="What should your star be called?">
+
+    <div class="lobby-actions">
+      <div class="lobby-panel">
+        <h2>Start a room</h2>
+        <p class="hint">You'll get a 4-letter code to send them.</p>
+        <button id="create-btn" class="btn btn-primary">Create our room</button>
+      </div>
+
+      <div class="divider" role="separator" aria-label="or"><span>or</span></div>
+
+      <div class="lobby-panel">
+        <h2>Join their room</h2>
+        <input id="code-input" class="text-input code-input" type="text" maxlength="4" placeholder="CODE" autocomplete="off">
+        <button id="join-btn" class="btn btn-secondary">Join</button>
+      </div>
+    </div>
+
+    <p id="lobby-error" class="lobby-error" role="alert" aria-live="polite"></p>
+  </div>
+</main>
+
+<!-- ============ WAITING ROOM ============ -->
+<section id="waiting" class="screen waiting hidden">
+  <div class="waiting-card">
+    <p class="eyebrow">room open</p>
+    <div class="room-code-display" id="room-code-display">····</div>
+    <p class="hint">Send this code to them. The bridge lights up the moment they arrive.</p>
+    <button id="copy-link-btn" class="btn btn-secondary small">Copy invite link</button>
+    <div class="waiting-pulse" aria-hidden="true"><span></span><span></span><span></span></div>
+    <p class="waiting-status">Waiting for your other star&hellip;</p>
+  </div>
+</section>
+
+<!-- ============ GAME ============ -->
+<section id="game" class="screen game hidden">
+
+  <header class="bridge-header">
+    <div class="player-badge me">
+      <span class="player-star" id="me-star">★</span>
+      <span class="player-name" id="me-name">You</span>
+    </div>
+
+    <div class="bridge-track" id="bridge-track" aria-hidden="true">
+      <div class="bridge-line"></div>
+      <div class="bridge-stars" id="bridge-stars"></div>
+    </div>
+
+    <div class="player-badge partner">
+      <span class="player-name" id="partner-name">Waiting…</span>
+      <span class="player-star" id="partner-star">☆</span>
+    </div>
+
+    <div class="room-pill">
+      <span class="room-pill-label">room</span>
+      <span id="room-code-mini">····</span>
+    </div>
+  </header>
+
+  <p id="connection-banner" class="connection-banner hidden"></p>
+
+  <div class="game-body">
+
+    <nav class="tabs" role="tablist" aria-label="Game modes">
+      <button class="tab active" data-tab="puzzle" role="tab" aria-selected="true">✦ Constellation</button>
+      <button class="tab" data-tab="garden" role="tab" aria-selected="false">✿ Our Garden</button>
+    </nav>
+
+    <div class="panels">
+
+      <!-- ---- Puzzle panel ---- -->
+      <section id="panel-puzzle" class="panel active" role="tabpanel">
+        <div class="puzzle-intro">
+          <p class="puzzle-score">Constellations bridged: <strong id="score-display">0</strong></p>
+          <p class="puzzle-hint">Some stars are calling. Find and hold the same ones together — a star only lights once you <em>both</em> touch it.</p>
+        </div>
+        <div id="star-grid" class="star-grid" role="group" aria-label="Constellation puzzle grid"></div>
+      </section>
+
+      <!-- ---- Garden panel ---- -->
+      <section id="panel-garden" class="panel" role="tabpanel">
+        <div class="garden-intro">
+          <p class="garden-hint">Plant something for them. Everything you grow here, they see too.</p>
+          <div class="garden-palette" id="garden-palette">
+            <button class="seed-btn" data-emoji="✨">✨</button>
+            <button class="seed-btn" data-emoji="🌸">🌸</button>
+            <button class="seed-btn" data-emoji="🌷">🌷</button>
+            <button class="seed-btn" data-emoji="🌙">🌙</button>
+            <button class="seed-btn" data-emoji="💫">💫</button>
+            <button class="seed-btn" data-emoji="⭐">⭐</button>
+          </div>
+        </div>
+        <div id="garden-canvas" class="garden-canvas"></div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ---- Chat / emote dock ---- -->
+  <footer class="dock">
+    <div class="emote-bar" id="emote-bar">
+      <button class="emote-btn" data-emoji="💖">💖</button>
+      <button class="emote-btn" data-emoji="🤗">🤗</button>
+      <button class="emote-btn" data-emoji="😘">😘</button>
+      <button class="emote-btn" data-emoji="🥹">🥹</button>
+      <button class="emote-btn" data-emoji="😢">😢</button>
+      <button class="emote-btn" data-emoji="🎉">🎉</button>
+    </div>
+    <form id="chat-form" class="chat-form" autocomplete="off">
+      <input id="chat-input" class="text-input chat-input" type="text" maxlength="300" placeholder="Say something…">
+      <button type="submit" class="btn btn-primary small">Send</button>
+    </form>
+    <div id="chat-log" class="chat-log" aria-live="polite"></div>
+  </footer>
+
+</section>
+
+<div id="emote-overlay" class="emote-overlay" aria-hidden="true"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js"></script>
+</body>
+</html>
