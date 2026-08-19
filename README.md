@@ -1,62 +1,36 @@
-# StarBridge
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-A cozy two-player co-op puzzle game for long-distance couples.
+## Getting Started
 
-## Files (all flat, no folders — easy to upload from a phone)
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
-package.json
-server.js
-index.html
-style.css
-client.js
-```
 
-## Deploy for free, entirely from your phone
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-**1. Get the files onto your phone**
-Download all 5 files above from this chat (tap each, save to Files/Downloads).
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-**2. Create a GitHub repo (mobile browser, github.com)**
-- Sign in (or sign up) at github.com in your phone's browser
-- Tap the **+** in the top right → **New repository**
-- Name it `starbridge`, keep it Public, tap **Create repository**
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-**3. Upload the files**
-- On the new repo's page, tap **Add file → Upload files**
-- Tap the upload area, it opens your phone's file picker — go to Downloads,
-  select all 5 files at once (server.js, package.json, index.html, style.css,
-  client.js), confirm
-- Scroll down, tap **Commit changes**
+## Learn More
 
-**4. Deploy on Render (mobile browser, render.com)**
-- Sign up at render.com — easiest with "Sign up with GitHub"
-- Tap **New +** → **Web Service**
-- Authorize Render to see your repos, pick `starbridge`
-- Settings:
-  - **Runtime**: Node
-  - **Build Command**: `npm install`
-  - **Start Command**: `npm start`
-  - **Instance Type**: Free
-- Tap **Create Web Service**
+To learn more about Next.js, take a look at the following resources:
 
-**5. Wait ~1-2 minutes.** Render gives you a link like
-`https://starbridge-xyz.onrender.com` — that's the link you send her. She
-just opens it, no installs, works on her phone or laptop.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-One thing to know: Render's free tier sleeps after 15 min of no traffic, so
-the very first open after a while takes ~30-50 seconds to wake up. Normal —
-just don't worry if it looks blank for a moment.
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## How it plays
-- **Constellation tab**: a 5×5 star grid lights up a few target stars each
-  round — a star only locks in once *both* of you click it, so you're
-  coordinating in real time.
-- **Garden tab**: pick a seed emoji, click anywhere on the shared canvas to
-  plant it. You'll see your partner's glowing cursor too.
-- **Dock**: text chat + one-tap floating emotes (💖🤗😘🥹😢🎉).
+## Deploy on Vercel
 
-## Notes
-- Room state lives in memory — a server restart clears open rooms, fine for
-  casual two-person use.
-- Empty rooms auto-clear ~10 minutes after both players disconnect.
-- If a connection drops mid-session, rejoin with the same room code.
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
