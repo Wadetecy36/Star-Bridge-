@@ -19,7 +19,7 @@ export default function RoomApp({ initial }: { initial: Initial }) {
   const [message, setMessage] = useState(''); const [seed, setSeed] = useState('🌷'); const [notice, setNotice] = useState(''); const [loadingRound, setLoadingRound] = useState(false); const [inviteOpen, setInviteOpen] = useState(false);
   const [people, setPeople] = useState(initial.people);
   const roomIds = useMemo(() => people.map(person => person.id), [people]);
-  async function refreshRoomState() { const response = await fetch('/api/room-state', { cache: 'no-store' }); if (!response.ok) return; const data = await response.json(); setPeople(data.people || []); setRound(data.activeRound || null); setStars(data.stars || []); }
+  async function refreshRoomState() { const response = await fetch('/api/room-state', { cache: 'no-store' }); if (!response.ok) return; const data = await response.json(); setPeople(data.people || []); if (data.activeRound) { setRound((current: any) => current?.id === data.activeRound.id ? { ...current, ...data.activeRound } : data.activeRound); setStars(data.stars || []); } }
 
   async function loadAchievements() { const response = await fetch('/api/achievements', { cache: 'no-store' }); if (!response.ok) return; const data = await response.json(); setAchievements(data.rounds || []); }
   async function triggerCompletion() { if (!round || completion?.id === round.id) return; setCompletion(round); await loadAchievements(); }
@@ -33,7 +33,7 @@ export default function RoomApp({ initial }: { initial: Initial }) {
   useEffect(() => {
     const client = supabaseBrowser();
     const channel = client.channel(`room-${initial.me.room_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'constellation_stars' }, async () => { if (round) { const { data } = await client.from('constellation_stars').select('*').eq('round_id', round.id).order('position'); setStars(data || []); } })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'constellation_stars' }, async () => { const latest = await fetch('/api/room-state', { cache: 'no-store' }); if (!latest.ok) return; const snapshot = await latest.json(); if (snapshot.activeRound) { setRound((current: any) => current?.id === snapshot.activeRound.id ? { ...current, ...snapshot.activeRound } : snapshot.activeRound); setStars(snapshot.stars || []); } })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'garden_plants' }, payload => { setPlants(current => [...current, payload.new]); setNewPlantIds(current => [...current, payload.new.id]); window.setTimeout(() => setNewPlantIds(current => current.filter(id => id !== payload.new.id)), 1800); })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { setMessages(current => [...current, payload.new]); setNewMessageIds(current => [...current, payload.new.id]); window.setTimeout(() => setNewMessageIds(current => current.filter(id => id !== payload.new.id)), 1000); })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'emotes' }, payload => { setEmoteBursts(current => [...current, payload.new]); window.setTimeout(() => setEmoteBursts(current => current.filter(item => item.id !== payload.new.id)), 2200); })
@@ -44,7 +44,7 @@ export default function RoomApp({ initial }: { initial: Initial }) {
     (async () => { const gardenResponse = await fetch('/api/garden', { cache: 'no-store' }); if (gardenResponse.ok) { const gardenData = await gardenResponse.json(); setPlants(gardenData.plants || []); } const dockResponse = await fetch('/api/dock', { cache: 'no-store' }); if (dockResponse.ok) { const dockData = await dockResponse.json(); setMessages(dockData.messages || []); } await loadAchievements(); await loadBottles(); await refreshRoomState(); })();
     const poll = window.setInterval(refreshRoomState, 2500);
     return () => { window.clearInterval(poll); client.removeChannel(channel); };
-  }, [initial.me.room_id, roomIds, round]);
+  }, [initial.me.room_id, roomIds.join(',')]);
 
   async function startRound(difficulty = settings.difficulty || 'normal') { setLoadingRound(true); const result = await api('/api/game', { action: 'new_round', difficulty }); setLoadingRound(false); if (result.round) { const client = supabaseBrowser(); const { data } = await client.from('constellation_stars').select('*').eq('round_id', result.round.id).order('position'); setRound(result.round); setStars(data || []); await refreshRoomState(); toast(`${difficulty} constellation is ready for both of you.`); } else toast(result.error || 'That constellation could not start.'); }
   async function refreshStars(roundId = round?.id) { if (!roundId) return; const client = supabaseBrowser(); const { data } = await client.from('constellation_stars').select('*').eq('round_id', roundId).order('position'); if (data) setStars(data); }
