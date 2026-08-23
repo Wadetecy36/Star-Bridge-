@@ -5,9 +5,12 @@ import { useEffect, useState } from 'react';
 export default function StarBridgeLoader() {
   const [done, setDone] = useState(false);
   useEffect(() => {
-    const finish = () => window.setTimeout(() => setDone(true), 360);
+    const started = performance.now();
+    const minimumVisibleMs = 1800;
+    let settled = false;
+    const finish = () => { if (settled) return; settled = true; const remaining = Math.max(0, minimumVisibleMs - (performance.now() - started)); window.setTimeout(() => setDone(true), remaining); };
     if (document.readyState === 'complete') finish(); else window.addEventListener('load', finish, { once: true });
-    const fallback = window.setTimeout(() => setDone(true), 2200);
+    const fallback = window.setTimeout(finish, 3200);
     return () => { window.removeEventListener('load', finish); window.clearTimeout(fallback); };
   }, []);
   return <div className={done ? 'starbridge-loader is-done' : 'starbridge-loader'} aria-hidden={done}>
