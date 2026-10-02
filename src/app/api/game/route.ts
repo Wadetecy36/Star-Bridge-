@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyRoomSession } from '@/lib/session';
+import { getSessionFromRequest } from '@/lib/session';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
 const configs: Record<string, { grid: number; targets: number; timer: number | null }> = { easy: { grid: 5, targets: 3, timer: null }, normal: { grid: 5, targets: 5, timer: null }, hard: { grid: 5, targets: 7, timer: 90 } };
 function targets(grid: number, count: number) { const all = Array.from({ length: grid * grid }, (_, index) => index); for (let i = all.length - 1; i > 0; i -= 1) { const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1); [all[i], all[j]] = [all[j], all[i]]; } return new Set(all.slice(0, count)); }
-async function current() { const store = await cookies(); return verifyRoomSession(store.get('constellation_session')?.value); }
 
 export async function POST(request: NextRequest) {
-  const session = await current(); if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const session = await getSessionFromRequest(request); if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await request.json().catch(() => null); const action = body?.action;
   const { data: me } = await supabaseAdmin.from('users').select('id,room_id').eq('id', session.userId).maybeSingle();
   if (!me || me.room_id !== session.roomId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,7 +18,8 @@ export async function POST(request: NextRequest) {
     if (error || !round) return NextResponse.json({ error: error?.message || 'Could not begin round' }, { status: 400 });
     await supabaseAdmin.from('constellation_stars').insert(Array.from({ length: config.grid * config.grid }, (_, position) => ({ round_id: round.id, position, is_target: targets(config.grid, config.targets).has(position) })));
     await supabaseAdmin.from('user_settings').update({ difficulty }).eq('user_id', me.id); await supabaseAdmin.from('audit_log').insert({ user_id: me.id, event_type: 'difficulty_changed', metadata: { difficulty } });
-    return NextResponse.json({ round });
+    const { data: stars } = await supabaseAdmin.from('constellation_stars').select('*').eq('round_id', round.id).order('position');
+    return NextResponse.json({ round, stars: stars || [] });
   }
   if (action === 'click_star') {
     const position = Number(body?.position); const { data: round } = await supabaseAdmin.from('constellation_rounds').select('*').eq('room_id', me.room_id).eq('status', 'active').maybeSingle();

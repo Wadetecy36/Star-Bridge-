@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyRoomSession } from '@/lib/session';
+import { getSessionFromRequest } from '@/lib/session';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
-async function current() { const store = await cookies(); return verifyRoomSession(store.get('constellation_session')?.value); }
-async function roomUser() { const session = await current(); if (!session) return null; const { data: me } = await supabaseAdmin.from('users').select('id,room_id').eq('id', session.userId).maybeSingle(); return me?.room_id === session.roomId ? me : null; }
-async function roomUserIds(roomId: string) { const { data } = await supabaseAdmin.from('users').select('id').eq('room_id', roomId); return (data || []).map(person => person.id); }
+async function roomUser(request?: NextRequest) { const session = await getSessionFromRequest(request); if (!session) return null; const { data: me } = await supabaseAdmin.from('users').select('id,room_id').eq('id', session.userId).maybeSingle(); return me?.room_id === session.roomId ? me : null; }
+async function roomUserIds(roomId: string) { const { data } = await supabaseAdmin.from('users').select('id').eq('room_id', roomId); return (data || []).map((person: any) => person.id); }
 
-export async function GET() {
-  const me = await roomUser(); if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function GET(request: NextRequest) {
+  const me = await roomUser(request); if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const ids = await roomUserIds(me.room_id);
   const { data: plants, error } = ids.length ? await supabaseAdmin.from('garden_plants').select('*').in('user_id', ids).order('planted_at') : { data: [], error: null };
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -16,7 +14,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const me = await roomUser(); if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const me = await roomUser(request); if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await request.json().catch(() => null);
   const action = body?.action || 'plant';
   const ids = await roomUserIds(me.room_id);

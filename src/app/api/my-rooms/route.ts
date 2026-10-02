@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { verifyRoomSession } from '@/lib/session';
+import { getSessionFromRequest, getCookieOptions } from '@/lib/session';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
 const HISTORY_COOKIE = 'constellation_rooms';
@@ -13,7 +13,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await verifyRoomSession(request.cookies.get('constellation_session')?.value);
+  const session = await getSessionFromRequest(request);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { data: user } = await supabaseAdmin.from('users').select('id,room_id,username').eq('id', session.userId).maybeSingle();
   if (!user || user.room_id !== session.roomId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,6 +23,11 @@ export async function POST(request: NextRequest) {
   try { previous = JSON.parse(request.cookies.get(HISTORY_COOKIE)?.value || '[]'); } catch {}
   const next = [{ roomId: user.room_id, inviteCode: room.invite_code, username: user.username, savedAt: Date.now() }, ...previous.filter(item => item.roomId !== user.room_id)].slice(0, 8);
   const response = NextResponse.json({ rooms: next });
-  response.cookies.set(HISTORY_COOKIE, JSON.stringify(next), { httpOnly: false, sameSite: 'lax', secure: false, maxAge: 60 * 60 * 24 * 90, path: '/' });
+
+  const opts = getCookieOptions(request);
+  response.cookies.set(HISTORY_COOKIE, JSON.stringify(next), {
+    ...opts,
+    httpOnly: false,
+  });
   return response;
 }

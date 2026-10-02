@@ -1,10 +1,9 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyRoomSession } from '@/lib/session';
+import { NextRequest, NextResponse } from 'next/server';
+import { getSessionFromRequest } from '@/lib/session';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
-export async function GET() {
-  const store = await cookies(); const session = await verifyRoomSession(store.get('constellation_session')?.value);
+export async function GET(request: NextRequest) {
+  const session = await getSessionFromRequest(request);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { data: me } = await supabaseAdmin.from('users').select('room_id').eq('id', session.userId).maybeSingle();
   if (!me || me.room_id !== session.roomId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

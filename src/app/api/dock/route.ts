@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyRoomSession } from '@/lib/session';
+import { getSessionFromRequest } from '@/lib/session';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
-async function current() { const store = await cookies(); return verifyRoomSession(store.get('constellation_session')?.value); }
-async function roomUser() { const session = await current(); if (!session) return null; const { data: me } = await supabaseAdmin.from('users').select('id,room_id').eq('id', session.userId).maybeSingle(); return me?.room_id === session.roomId ? me : null; }
-async function roomUserIds(roomId: string) { const { data } = await supabaseAdmin.from('users').select('id').eq('room_id', roomId); return (data || []).map(user => user.id); }
+async function roomUser(request?: NextRequest) { const session = await getSessionFromRequest(request); if (!session) return null; const { data: me } = await supabaseAdmin.from('users').select('id,room_id').eq('id', session.userId).maybeSingle(); return me?.room_id === session.roomId ? me : null; }
+async function roomUserIds(roomId: string) { const { data } = await supabaseAdmin.from('users').select('id').eq('room_id', roomId); return (data || []).map((user: any) => user.id); }
 
-export async function GET() {
-  const me = await roomUser(); if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function GET(request: NextRequest) {
+  const me = await roomUser(request); if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const ids = await roomUserIds(me.room_id);
   const [{ data: messages, error: messageError }, { data: emotes, error: emoteError }] = await Promise.all([
     ids.length ? supabaseAdmin.from('messages').select('*').in('user_id', ids).order('sent_at').limit(100) : Promise.resolve({ data: [], error: null }),
@@ -19,7 +17,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const me = await roomUser(); if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const me = await roomUser(request); if (!me) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const body = await request.json().catch(() => null);
   if (body?.action === 'message') {
     const content = String(body.content || '').trim().slice(0, 500);

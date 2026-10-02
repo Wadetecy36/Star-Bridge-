@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyRoomSession, signRoomSession } from '@/lib/session';
+import { verifyRoomSession, signRoomSession, getCookieOptions, getDeleteCookieOptions } from '@/lib/session';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
 const COOKIE = 'constellation_session';
@@ -13,8 +12,8 @@ async function sessionResponse(userId: string, roomId: string, request: NextRequ
   const { data: session, error } = await supabaseAdmin.from('sessions').insert({ user_id: userId, ip_hash: ip ? hash(ip) : null, user_agent: userAgent }).select('id').single();
   if (error || !session) throw new Error(error?.message || 'Could not start session');
   const token = await signRoomSession({ userId, roomId, sessionId: session.id });
-  const response = NextResponse.json({ ok: true, userId, roomId, inviteCode });
-  response.cookies.set(COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: false, maxAge: 60 * 60 * 24 * 90, path: '/' });
+  const response = NextResponse.json({ ok: true, userId, roomId, inviteCode, token });
+  response.cookies.set(COOKIE, token, getCookieOptions(request));
   return response;
 }
 
@@ -64,4 +63,8 @@ export async function POST(request: NextRequest) {
   }
   return NextResponse.json({ error: 'Unknown auth action.' }, { status: 400 });
 }
-export async function DELETE() { const response = NextResponse.json({ ok: true }); response.cookies.set(COOKIE, '', { maxAge: 0, path: '/' }); return response; }
+export async function DELETE(request: NextRequest) {
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set(COOKIE, '', getDeleteCookieOptions(request));
+  return response;
+}
